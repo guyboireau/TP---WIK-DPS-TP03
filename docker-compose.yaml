@@ -1,0 +1,70 @@
+# Version de l'API Docker Compose à utiliser pour lire ce fichier
+version: '3.8'
+
+# Déclaration des services
+services:
+
+  # Un service nommée my_app
+  my_app:
+
+    # Définition du Dockerfile à build et à utiliser
+    build:
+      context: .
+      dockerfile: dc.Dockerfile
+
+    # Configuration des ports à exposer sur le réseau
+    ports:
+      - '8081'
+
+    # Nombre de réplicas souhaités du même container 
+    deploy:
+      replicas: 4 # Ici on déploie 4 fois le container au sein du service my_app
+    
+    # Rédemarrage automatique dans tous les cas lorsqu'un container s'arrête
+    restart: always
+
+    # Définir des variables d'environnement pour le service
+    environment:
+      - PING_LISTEN_PORT=8081
+    
+    # Configure le réseau du service
+    # Il est accessible seulement via le réseau nommé
+    # front-network
+    networks:
+      - front-network
+
+  # Un service nommé proxy
+  proxy:
+
+    # L'image Docker a utilisé pour le service
+    image: nginx:latest
+
+    # Monter un fichier du répertoire courant de l'hôte
+    # sur le service
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    
+    # Configurer les ports exposés sur le réseau et 
+    # le port-forwarding entre l'hôte et le service
+    ports:
+      - 8080:80
+
+    # Définir une relation de dépendance
+    # Si my_app n'est pas prêt alors pas de proxy
+    depends_on: 
+      - my_app
+    
+    # Configure le réseau du service
+    # Il est accessible seulement via le réseau nommé
+    # front-network
+    networks:
+      - front-network
+
+# Déclaration des réseaux
+networks:
+  # Un network nommé front-network qui utilise le driver bridge
+  front-network:
+    driver: bridge
+
+
+
